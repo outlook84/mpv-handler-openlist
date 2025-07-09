@@ -10,6 +10,7 @@
 - **简易安装**: 通过简单的命令行指令进行安装和卸载。
 - **可配置**: `mpv.exe` 或 `mpvnet.exe` 的路径是可配置的。
 - **日志记录**: 提供可选的日志功能，方便排查问题。
+- **自定义 User-Agent**: 允许为特定的 URL 路径设置自定义的 User-Agent。
 
 ## 安装步骤
 
@@ -44,7 +45,16 @@
 mpvPath   = C:\你的路径\mpv.exe ; mpv.exe 或 mpvnet.exe 的路径
 enableLog = false              ; 设置为 true 来启用日志记录
 logPath   = mpv-handler.log    ; 日志文件的路径
+[UserAgents]
+aaa/bbb = "pan.baidu.com"
+bbb/ccc = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
 ```
+
+### 自定义 User-Agent
+
+您可以为特定路径下的视频源指定自定义的 User-Agent。
+
+配置的键是一个路径前缀，它将与 URL 中 `/d/` 之后的部分进行匹配。例如，对于 URL `https://.../d/aaa/bbb/ccc`，用于匹配的路径是 `aaa` 或 `aaa/bbb/`。
 
 ## 许可证
 

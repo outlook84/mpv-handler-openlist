@@ -17,13 +17,13 @@ import (
 
 // Config holds external settings loaded/saved via config.ini
 type Config struct {
-	MpvPath   string
-	EnableLog bool
-	LogPath   string
+	MpvPath      string
+	EnableLog    bool
+	LogPath      string
+	UserAgentMap map[string]string
 }
 
 // loadConfig reads the configuration file from the executable's directory.
-// The config file is named after the executable with a .ini extension.
 func loadConfig() (*Config, error) {
 	exe, err := os.Executable()
 	if err != nil {
@@ -31,19 +31,40 @@ func loadConfig() (*Config, error) {
 	}
 	dir := filepath.Dir(exe)
 	iniPath := filepath.Join(dir, strings.TrimSuffix(filepath.Base(exe), filepath.Ext(exe))+".ini")
-	cfgFile, err := ini.LoadSources(ini.LoadOptions{Insensitive: true}, iniPath)
-	if err != nil {
-		return &Config{MpvPath: "", EnableLog: false, LogPath: filepath.Join(dir, "mpv-handler.log")}, nil
+
+	defaultLogPath := filepath.Join(dir, "mpv-handler.log")
+	defaultConfig := &Config{
+		MpvPath:      "",
+		EnableLog:    false,
+		LogPath:      defaultLogPath,
+		UserAgentMap: make(map[string]string),
 	}
-	sec := cfgFile.Section("mpv-handler")
-	return &Config{
-		MpvPath:   sec.Key("mpvPath").MustString(""),
-		EnableLog: sec.Key("enableLog").MustBool(false),
-		LogPath:   sec.Key("logPath").MustString(filepath.Join(dir, "mpv-handler.log")),
-	}, nil
+
+	loadOpts := ini.LoadOptions{
+		Insensitive:         true,
+		IgnoreInlineComment: true,
+	}
+
+	cfgFile, err := ini.LoadSources(loadOpts, iniPath)
+	if err != nil {
+		return defaultConfig, nil
+	}
+
+	secMpvHandler := cfgFile.Section("mpv-handler")
+	defaultConfig.MpvPath = secMpvHandler.Key("mpvPath").MustString("")
+	defaultConfig.EnableLog = secMpvHandler.Key("enableLog").MustBool(false)
+	defaultConfig.LogPath = secMpvHandler.Key("logPath").MustString(defaultLogPath)
+
+	secUserAgents := cfgFile.Section("UserAgents")
+	if secUserAgents != nil {
+		defaultConfig.UserAgentMap = secUserAgents.KeysHash()
+	}
+
+	return defaultConfig, nil
 }
 
 // saveConfig writes the configuration file.
+// It now loads the existing file first to preserve formatting.
 func saveConfig(cfg *Config) error {
 	exe, err := os.Executable()
 	if err != nil {
@@ -51,13 +72,37 @@ func saveConfig(cfg *Config) error {
 	}
 	dir := filepath.Dir(exe)
 	iniPath := filepath.Join(dir, strings.TrimSuffix(filepath.Base(exe), filepath.Ext(exe))+".ini")
-	file := ini.Empty()
-	sec := file.Section("mpv-handler")
-	sec.Key("mpvPath").SetValue(cfg.MpvPath)
-	sec.Key("enableLog").SetValue(fmt.Sprintf("%v", cfg.EnableLog))
-	sec.Key("logPath").SetValue(cfg.LogPath)
+
+	// 1. Load the existing file using the SAME options as loadConfig.
+	loadOpts := ini.LoadOptions{
+		Insensitive:         true,
+		IgnoreInlineComment: true,
+	}
+	file, err := ini.LoadSources(loadOpts, iniPath)
+	if err != nil {
+		// If the file doesn't exist, create a new empty object.
+		file = ini.Empty()
+	}
+
+	// 2. Overwrite or create sections and keys based on the current cfg state.
+	secMpvHandler, _ := file.GetSection("mpv-handler")
+	if secMpvHandler == nil {
+		secMpvHandler, _ = file.NewSection("mpv-handler")
+	}
+	secMpvHandler.Key("mpvPath").SetValue(cfg.MpvPath)
+	secMpvHandler.Key("enableLog").SetValue(fmt.Sprintf("%v", cfg.EnableLog))
+	secMpvHandler.Key("logPath").SetValue(cfg.LogPath)
+
+	file.DeleteSection("UserAgents")
+	secUserAgents, _ := file.NewSection("UserAgents")
+	for pattern, ua := range cfg.UserAgentMap {
+		secUserAgents.Key(pattern).SetValue(ua)
+	}
+
+	// 3. Save the modified file object back to disk.
 	return file.SaveTo(iniPath)
 }
+
 
 // writeLog appends a message if enabled
 func writeLog(enable bool, logPath, msg string) {
@@ -99,9 +144,6 @@ func installSelf(exePath string) error {
 
 // uninstallSelf removes protocol
 func uninstallSelf() error {
-	// Keys must be deleted from deepest to shallowest.
-	// We ignore "not found" errors (syscall.ENOENT), as the key may have
-	// already been deleted, but we return any other error.
 	keysToDelete := []string{
 		`mpv\shell\open\command`,
 		`mpv\shell\open`,
@@ -116,10 +158,10 @@ func uninstallSelf() error {
 			return fmt.Errorf("failed to delete registry key %q: %w", keyPath, err)
 		}
 	}
-	return nil // Success
+	return nil
 }
 
-// handleURL processes the URL
+// handleURL processes the URL and launches mpv with appropriate arguments
 func handleURL(raw string, cfg *Config) error {
 	writeLog(cfg.EnableLog, cfg.LogPath, fmt.Sprintf("Raw URL: %s", raw))
 	const prefix = "mpv://"
@@ -135,11 +177,34 @@ func handleURL(raw string, cfg *Config) error {
 		return err
 	}
 	writeLog(cfg.EnableLog, cfg.LogPath, fmt.Sprintf("Decoded URL: %s", decoded))
+
 	if _, err := os.Stat(cfg.MpvPath); err != nil {
 		writeLog(cfg.EnableLog, cfg.LogPath, "mpv not found at: "+cfg.MpvPath)
 		return err
 	}
-	return exec.Command(cfg.MpvPath, decoded).Start()
+
+	args := []string{}
+	userAgent := ""
+
+	parsedURL, err := url.Parse(decoded)
+	if err == nil && parsedURL.Path != "" {
+		for pathPattern, ua := range cfg.UserAgentMap {
+			if strings.Contains(parsedURL.Path, pathPattern) {
+				userAgent = ua
+				writeLog(cfg.EnableLog, cfg.LogPath, fmt.Sprintf("Found matching UA for pattern '%s'. Using UA: %s", pathPattern, userAgent))
+				break
+			}
+		}
+	} else {
+		writeLog(cfg.EnableLog, cfg.LogPath, "Could not parse URL or URL has no path, skipping UA matching.")
+	}
+
+	if userAgent != "" {
+		args = append(args, "--user-agent="+userAgent)
+	}
+	args = append(args, decoded)
+	writeLog(cfg.EnableLog, cfg.LogPath, fmt.Sprintf("Executing: %s %s", cfg.MpvPath, strings.Join(args, " ")))
+	return exec.Command(cfg.MpvPath, args...).Start()
 }
 
 func main() {
@@ -154,7 +219,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Command-line handling
 	if len(os.Args) > 1 {
 		arg := os.Args[1]
 		switch arg {
@@ -168,13 +232,11 @@ func main() {
 				fmt.Fprintf(os.Stderr, "Error: mpv.exe not found at the specified path: %s\n", mpvPath)
 				os.Exit(1)
 			}
-
 			cfg.MpvPath = mpvPath
 			if err := saveConfig(cfg); err != nil {
 				fmt.Fprintln(os.Stderr, "Failed to save config:", err)
 				os.Exit(1)
 			}
-
 			if err := installSelf(exe); err != nil {
 				fmt.Fprintln(os.Stderr, "Install failed:", err)
 				os.Exit(1)
@@ -190,18 +252,16 @@ func main() {
 			return
 		default:
 			if err := handleURL(arg, cfg); err != nil {
-				// The error is already logged by handleURL if logging is enabled.
-				// Avoid printing to stderr to prevent OS error dialogs when called by a browser.
 				os.Exit(2)
 			}
 			return
 		}
 	}
 
-	// If no arguments are provided, show usage information.
 	fmt.Println("mpv-handler: A protocol handler for mpv.")
 	fmt.Println("Usage:")
 	fmt.Println("  mpv-handler --install \"<full-path-to-mpv.exe>\"   : Register the mpv:// protocol.")
 	fmt.Println("  mpv-handler --uninstall                          : Unregister the mpv:// protocol.")
 	fmt.Println("\nThis program is usually not called by users directly, but by a web browser via the protocol.")
+	fmt.Println("\nConfiguration is stored in mpv-handler.ini in the same directory as the executable.")
 }

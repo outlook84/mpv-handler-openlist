@@ -10,6 +10,7 @@ A URL protocol handler (`mpv://`) for the [mpv](https://mpv.io/) or [mpv.net](ht
 - **Easy Setup**: Simple command-line installation and uninstallation.
 - **Configurable**: The path to `mpv.exe` or `mpvnet.exe` is configurable.
 - **Logging**: Optional logging for troubleshooting.
+- **Custom User-Agent**: Allows setting custom User-Agents for specific URL paths.
 
 ## Installation
 
@@ -44,6 +45,22 @@ The tool uses a configuration file named `mpv-handler.ini`, located in the same 
 mpvPath   = C:\path\to\your\mpv.exe ; Path to mpv.exe or mpvnet.exe
 enableLog = false                   ; Set to true to enable logging
 logPath   = mpv-handler.log         ; Path for the log file
+[UserAgents]
+aaa/bbb = "pan.baidu.com"
+bbb/ccc = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
+```
+
+### Custom User-Agent
+
+You can specify a custom User-Agent for video sources under specific paths. To use this feature, add a `[UserAgents]` section to your `mpv-handler.ini` file.
+
+The key is a path prefix that will be matched against the part of the URL after `/d/`. For example, for the URL `https://.../d/aaa/bbb/ccc`, the path used for matching is `aaa` or `aaa/bbb/ccc`.
+
+Example:
+```ini
+[UserAgents]
+aaa/bbb = "pan.baidu.com"
+bbb/ccc = ""
 ```
 
 ## License
