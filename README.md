@@ -42,13 +42,18 @@ The tool uses a configuration file named `mpv-handler.ini`, located in the same 
 
 ```ini
 [mpv-handler]
-mpvPath   = C:\path\to\your\mpv.exe ; Path to mpv.exe or mpvnet.exe
-enableLog = false                   ; Set to true to enable logging
-logPath   = mpv-handler.log         ; Path for the log file
+mpvPath   = C:\path\to\your\mpv.exe
+enableLog = false
+logPath   = mpv-handler.log
 [UserAgents]
 aaa/bbb = "pan.baidu.com"
 bbb/ccc = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
 ```
+
+- `mpvPath`: Path to mpv.exe or mpvnet.exe
+- `enableLog`: Set to true to enable logging
+- `logPath`: Path for the log file
+
 
 ### Custom User-Agent
 

@@ -42,13 +42,17 @@
 
 ```ini
 [mpv-handler]
-mpvPath   = C:\你的路径\mpv.exe ; mpv.exe 或 mpvnet.exe 的路径
-enableLog = false              ; 设置为 true 来启用日志记录
-logPath   = mpv-handler.log    ; 日志文件的路径
+mpvPath   = C:\你的路径\mpv.exe
+enableLog = false
+logPath   = mpv-handler.log
 [UserAgents]
 aaa/bbb = "pan.baidu.com"
 bbb/ccc = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
 ```
+
+- `mpvPath`: mpv.exe 或 mpvnet.exe 的路径
+- `enableLog`: 设置为 true 来启用日志记录
+- `logPath`: 日志文件的路径
 
 ### 自定义 User-Agent
 
