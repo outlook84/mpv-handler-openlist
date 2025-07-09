@@ -54,14 +54,5 @@ bbb/ccc = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Fi
 
 You can specify a custom User-Agent for video sources under specific paths. To use this feature, add a `[UserAgents]` section to your `mpv-handler.ini` file.
 
-The key is a path prefix that will be matched against the part of the URL after `/d/`. For example, for the URL `https://.../d/aaa/bbb/ccc`, the path used for matching is `aaa` or `aaa/bbb/ccc`.
-
-Example:
-```ini
-[UserAgents]
-aaa/bbb = "pan.baidu.com"
-bbb/ccc = ""
-```
-
 ## License
 This project is licensed under the GNU General Public License v2.0. See the [LICENSE](./LICENSE) file for details.
