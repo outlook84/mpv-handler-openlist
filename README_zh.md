@@ -17,10 +17,11 @@
 
 1.  **下载**: 前往 [Releases 页面](https://github.com/outlook84/mpv-handler-openlist/releases) 下载适合你系统的最新压缩包，例如 `mpv-handler_v1.2.3_windows_amd64.zip`。
 2.  **解压文件**: 将压缩包解压到你电脑上的一个固定位置（例如，mpv 或 mpv.net 播放器的文件夹内）。
-3.  **打开 GUI**: 双击 `mpv-handler.exe`。
-4.  **选择播放器**: 用 `浏览...` 按钮选择 `mpv.exe` 或 `mpvnet.exe`。
-5.  **可选**: 填写额外 mpv 参数，例如 `--fs`。
-6.  **注册协议**: 点击 `注册协议`。如果系统要求管理员权限，请以管理员身份运行本程序。
+3.  **Windows 警告说明**: 当前发布的二进制文件未做代码签名。Windows 对从 GitHub 下载的文件可能会弹出 SmartScreen 或“此文件来自其他计算机”的警告。如有需要，可先在文件属性里点击“解除锁定”，或在 PowerShell 中运行 `Unblock-File .\mpv-handler.exe` 后再启动。
+4.  **打开 GUI**: 双击 `mpv-handler.exe`。
+5.  **选择播放器**: 用 `浏览...` 按钮选择 `mpv.exe` 或 `mpvnet.exe`。
+6.  **可选**: 填写额外 mpv 参数，例如 `--fs`。
+7.  **注册协议**: 点击 `注册协议`。如果系统要求管理员权限，请以管理员身份运行本程序。
 
 ## 命令行用法
 

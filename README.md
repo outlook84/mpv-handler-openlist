@@ -17,10 +17,11 @@ A URL protocol handler (`mpv://`) for the [mpv](https://mpv.io/) or [mpv.net](ht
 
 1.  **Download**: Go to the [Releases page](https://github.com/outlook84/mpv-handler-openlist/releases) and download the latest archive for your system, such as `mpv-handler_v1.2.3_windows_amd64.zip`.
 2.  **Extract Files**: Unzip the archive to a permanent location on your computer (for example, inside your mpv or mpv.net folder).
-3.  **Open the GUI**: Double-click `mpv-handler.exe`.
-4.  **Choose your player**: Pick `mpv.exe` or `mpvnet.exe` with the `Browse...` button.
-5.  **Optional**: Add extra mpv arguments, for example `--fs`.
-6.  **Register Protocol**: Click `Register Protocol`. On systems where registry writes need elevation, run the app as administrator.
+3.  **Windows Warning Note**: Release binaries are currently unsigned. Windows may show a SmartScreen or "file came from another computer" warning for files downloaded from GitHub. If needed, open the file properties and click `Unblock`, or run `Unblock-File .\mpv-handler.exe` in PowerShell before launching it.
+4.  **Open the GUI**: Double-click `mpv-handler.exe`.
+5.  **Choose your player**: Pick `mpv.exe` or `mpvnet.exe` with the `Browse...` button.
+6.  **Optional**: Add extra mpv arguments, for example `--fs`.
+7.  **Register Protocol**: Click `Register Protocol`. On systems where registry writes need elevation, run the app as administrator.
 
 ## Command-Line Usage
 
