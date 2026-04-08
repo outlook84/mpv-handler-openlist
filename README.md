@@ -7,8 +7,9 @@ A URL protocol handler (`mpv://`) for the [mpv](https://mpv.io/) or [mpv.net](ht
 ## Features
 
 - **`mpv://` Protocol**: Handles `mpv://` URLs to open videos in mpv or mpv.net.
-- **Easy Setup**: Simple command-line installation and uninstallation.
-- **Configurable**: The path to `mpv.exe` or `mpvnet.exe` is configurable.
+- **Easy Setup**: Register or remove the protocol from the GUI, or use the command-line flags.
+- **Configurable**: Configure the path to `mpv.exe` or `mpvnet.exe`.
+- **Extra mpv Arguments**: Pass optional startup flags such as `--fs`.
 - **Logging**: Optional logging for troubleshooting.
 - **Custom User-Agent**: Allows setting custom User-Agents for specific URL paths.
 
@@ -16,25 +17,24 @@ A URL protocol handler (`mpv://`) for the [mpv](https://mpv.io/) or [mpv.net](ht
 
 1.  **Download**: Go to the [Releases page](https://github.com/outlook84/mpv-handler-openlist/releases) and download the latest `mpv-handler.exe`.
 2.  **Place Executable**: Move `mpv-handler.exe` to a permanent location on your computer (e.g., inside your mpv or mpv.net folder).
-3.  **Register Protocol**: Open a Command Prompt or PowerShell **as an administrator** in the directory where you placed the executable and run the following command. **Remember to replace the path with the actual path to your `mpv.exe` or `mpvnet.exe`**.
+3.  **Open the GUI**: Double-click `mpv-handler.exe`.
+4.  **Choose your player**: Pick `mpv.exe` or `mpvnet.exe` with the `Browse...` button.
+5.  **Optional**: Add extra mpv arguments, for example `--fs`.
+6.  **Register Protocol**: Click `Register Protocol`. On systems where registry writes need elevation, run the app as administrator.
+
+## Command-Line Usage
+
+- Install:
 
     ```shell
     .\mpv-handler.exe --install "C:\path\to\your\mpv.exe"
     ```
 
-    If successful, you will see the message "Protocol installed and mpv path saved." A configuration file named `mpv-handler.ini` will also be created in the same directory.
+- Uninstall:
 
-## Usage
-
-Once installed, simply click the `mpv` icon on the [OpenList](https://github.com/OpenListTeam/OpenList) web video playback page, and it will automatically call the player to play the current video.
-
-## Uninstallation
-
-To remove the URL protocol from your system, open a Command Prompt or PowerShell **as an administrator** in the tool's directory and run:
-
-```shell
-.\mpv-handler.exe --uninstall
-```
+    ```shell
+    .\mpv-handler.exe --uninstall
+    ```
 
 ## Configuration
 
@@ -43,6 +43,7 @@ The tool uses a configuration file named `mpv-handler.ini`, located in the same 
 ```ini
 [mpv-handler]
 mpvPath   = C:\path\to\your\mpv.exe
+extraArgs = --fs
 enableLog = false
 logPath   = mpv-handler.log
 [UserAgents]
@@ -51,15 +52,15 @@ bbb/ccc = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Fi
 ```
 
 - `mpvPath`: Path to mpv.exe or mpvnet.exe
+- `extraArgs`: Optional extra command-line arguments passed to mpv before the URL
 - `enableLog`: Set to true to enable logging
 - `logPath`: Path for the log file
-
 
 ### Custom User-Agent
 
 You can specify a custom User-Agent for video sources under specific paths.
 
-The key is a path prefix that will be matched against the part of the URL after `/d/`. For example, for the URL `https://.../d/aaa/bbb/ccc`, the path used for matching is `aaa` or `aaa/bbb/ccc`.
+The key is a path prefix that will be matched against the part of the URL after `/d/`. For example, for the URL `https://.../d/aaa/bbb/ccc`, the keys used for matching could be `aaa` or `aaa/bbb/`.
 
 ## License
 This project is licensed under the GNU General Public License v2.0. See the [LICENSE](./LICENSE) file for details.

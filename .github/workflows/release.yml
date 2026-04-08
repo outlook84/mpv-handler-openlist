@@ -35,7 +35,7 @@ jobs:
       - name: Build for windows/${{ matrix.goarch }}
         run: |
           # Cross-compiles for Windows. The -ldflags strip debug info to reduce binary size.
-          GOOS=windows GOARCH=${{ matrix.goarch }} go build -o mpv-handler-${{ matrix.goarch }}.exe -ldflags="-s -w" ./cmd/mpv-handler
+          GOOS=windows GOARCH=${{ matrix.goarch }} go build -o mpv-handler-${{ matrix.goarch }}.exe -ldflags="-s -w -H=windowsgui" ./cmd/mpv-handler
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -58,5 +58,4 @@ jobs:
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          # The files to upload. The pattern will find all .exe files within the subdirectories.
           files: artifacts/**/*.exe
