@@ -1,0 +1,49 @@
+version: 2
+
+project_name: mpv-handler
+
+dist: dist
+
+builds:
+  - id: windows
+    main: ./cmd/mpv-handler
+    binary: mpv-handler
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -H=windowsgui
+
+archives:
+  - id: windows-archives
+    ids:
+      - windows
+    formats:
+      - zip
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - README.md
+      - README_zh.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  draft: false
+  prerelease: auto
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"

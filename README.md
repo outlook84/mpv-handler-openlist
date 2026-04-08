@@ -15,8 +15,8 @@ A URL protocol handler (`mpv://`) for the [mpv](https://mpv.io/) or [mpv.net](ht
 
 ## Installation
 
-1.  **Download**: Go to the [Releases page](https://github.com/outlook84/mpv-handler-openlist/releases) and download the latest `mpv-handler.exe`.
-2.  **Place Executable**: Move `mpv-handler.exe` to a permanent location on your computer (e.g., inside your mpv or mpv.net folder).
+1.  **Download**: Go to the [Releases page](https://github.com/outlook84/mpv-handler-openlist/releases) and download the latest archive for your system, such as `mpv-handler_v1.2.3_windows_amd64.zip`.
+2.  **Extract Files**: Unzip the archive to a permanent location on your computer (for example, inside your mpv or mpv.net folder).
 3.  **Open the GUI**: Double-click `mpv-handler.exe`.
 4.  **Choose your player**: Pick `mpv.exe` or `mpvnet.exe` with the `Browse...` button.
 5.  **Optional**: Add extra mpv arguments, for example `--fs`.

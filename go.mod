@@ -1,6 +1,6 @@
 module github.com/outlook84/mpv-handler-openlist
 
-go 1.24.3
+go 1.26.2
 
 require (
 	golang.org/x/sys v0.33.0

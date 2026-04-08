@@ -15,8 +15,8 @@
 
 ## 安装步骤
 
-1.  **下载**: 前往 [Releases 页面](https://github.com/outlook84/mpv-handler-openlist/releases) 下载最新的 `mpv-handler.exe` 文件。
-2.  **放置程序**: 将 `mpv-handler.exe` 移动到你电脑上的一个固定位置（例如，mpv 或 mpv.net 播放器的文件夹内）。
+1.  **下载**: 前往 [Releases 页面](https://github.com/outlook84/mpv-handler-openlist/releases) 下载适合你系统的最新压缩包，例如 `mpv-handler_v1.2.3_windows_amd64.zip`。
+2.  **解压文件**: 将压缩包解压到你电脑上的一个固定位置（例如，mpv 或 mpv.net 播放器的文件夹内）。
 3.  **打开 GUI**: 双击 `mpv-handler.exe`。
 4.  **选择播放器**: 用 `浏览...` 按钮选择 `mpv.exe` 或 `mpvnet.exe`。
 5.  **可选**: 填写额外 mpv 参数，例如 `--fs`。
