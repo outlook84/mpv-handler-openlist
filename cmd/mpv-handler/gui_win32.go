@@ -13,6 +13,8 @@ const (
 	wsVisible          = 0x10000000
 	wsChild            = 0x40000000
 	wsClipChildren     = 0x02000000
+	wsCaption          = 0x00C00000
+	wsSysMenu          = 0x00080000
 	wsTabStop          = 0x00010000
 	wsVScroll          = 0x00200000
 
@@ -22,24 +24,27 @@ const (
 	esMultiline   = 0x0004
 	esReadOnly    = 0x0800
 
-	bsPushButton    = 0x00000000
-	bsAutoCheckbox  = 0x00000003
-	bmGetCheck      = 0x00F0
-	bmSetCheck      = 0x00F1
-	bstChecked      = 0x0001
-	wmCreate        = 0x0001
-	wmDestroy       = 0x0002
-	wmCommand       = 0x0111
-	wmCtlColorStatic = 0x0138
-	wmSetFont       = 0x0030
-	swShow          = 5
-	ofnPathMustExist = 0x00000800
-	ofnFileMustExist = 0x00001000
-	ofnExplorer     = 0x00080000
-	idcArrow        = 32512
-	colorWindow     = 5
-	defaultGUIFont  = 17
+	bsPushButton      = 0x00000000
+	bsAutoCheckbox    = 0x00000003
+	bmGetCheck        = 0x00F0
+	bmSetCheck        = 0x00F1
+	bstChecked        = 0x0001
+	wmCreate          = 0x0001
+	wmDestroy         = 0x0002
+	wmClose           = 0x0010
+	wmNotify          = 0x004E
+	wmCommand         = 0x0111
+	wmCtlColorStatic  = 0x0138
+	wmSetFont         = 0x0030
+	swShow            = 5
+	ofnPathMustExist  = 0x00000800
+	ofnFileMustExist  = 0x00001000
+	ofnExplorer       = 0x00080000
+	idcArrow          = 32512
+	colorWindow       = 5
+	defaultGUIFont    = 17
 	transparentBkMode = 1
+	iccLinkClass      = 0x00008000
 
 	idEditMpvPath      = 1001
 	idButtonBrowse     = 1002
@@ -49,16 +54,26 @@ const (
 	idButtonRegister   = 1006
 	idButtonUnregister = 1007
 	idStatusLabel      = 1008
+	idButtonAbout      = 1009
+	idAboutLink        = 1010
+
+	nmClick  = 0xFFFFFFFE
+	nmReturn = 0xFFFFFFFC
+
+	repositoryURL = "https://github.com/outlook84/mpv-handler-openlist"
 )
 
 var (
 	user32                   = syscall.NewLazyDLL("user32.dll")
 	kernel32                 = syscall.NewLazyDLL("kernel32.dll")
 	comdlg32                 = syscall.NewLazyDLL("comdlg32.dll")
+	comctl32                 = syscall.NewLazyDLL("comctl32.dll")
 	gdi32                    = syscall.NewLazyDLL("gdi32.dll")
+	shell32                  = syscall.NewLazyDLL("shell32.dll")
 	procMessageBoxW          = user32.NewProc("MessageBoxW")
 	procRegisterClassExW     = user32.NewProc("RegisterClassExW")
 	procCreateWindowExW      = user32.NewProc("CreateWindowExW")
+	procDestroyWindow        = user32.NewProc("DestroyWindow")
 	procDefWindowProcW       = user32.NewProc("DefWindowProcW")
 	procGetSysColorBrush     = user32.NewProc("GetSysColorBrush")
 	procShowWindow           = user32.NewProc("ShowWindow")
@@ -75,13 +90,16 @@ var (
 	procGetModuleHandleW     = kernel32.NewProc("GetModuleHandleW")
 	procGetOpenFileNameW     = comdlg32.NewProc("GetOpenFileNameW")
 	procCommDlgExtendedError = comdlg32.NewProc("CommDlgExtendedError")
+	procInitCommonControlsEx = comctl32.NewProc("InitCommonControlsEx")
 	procGetStockObject       = gdi32.NewProc("GetStockObject")
 	procCreateFontW          = gdi32.NewProc("CreateFontW")
 	procDeleteObject         = gdi32.NewProc("DeleteObject")
 	procSetBkMode            = gdi32.NewProc("SetBkMode")
+	procShellExecuteW        = shell32.NewProc("ShellExecuteW")
 
-	mainWindowClassName = syscall.StringToUTF16Ptr("MpvHandlerMainWindow")
-	currentAppState     *AppState
+	mainWindowClassName  = syscall.StringToUTF16Ptr("MpvHandlerMainWindow")
+	aboutWindowClassName = syscall.StringToUTF16Ptr("MpvHandlerAboutWindow")
+	currentAppState      *AppState
 )
 
 type AppState struct {
@@ -90,6 +108,7 @@ type AppState struct {
 	editExtraArgs  uintptr
 	checkEnableLog uintptr
 	statusLabel    uintptr
+	aboutHwnd      uintptr
 	titleFont      uintptr
 	labelFont      uintptr
 	bodyFont       uintptr
@@ -153,6 +172,18 @@ type openFilename struct {
 	FlagsEx           uint32
 }
 
+type initCommonControlsEx struct {
+	DwSize uint32
+	DwICC  uint32
+}
+
+type nmhdr struct {
+	HwndFrom uintptr
+	IDFrom   uintptr
+	Code     uint32
+	Padding  uint32
+}
+
 func mustUTF16Ptr(s string) *uint16 {
 	ptr, _ := syscall.UTF16PtrFromString(s)
 	return ptr
@@ -176,6 +207,18 @@ func createWindow(exStyle uint32, className, windowName string, style uint32, x,
 		0,
 	)
 	return hwnd
+}
+
+func initLinkControl() error {
+	controls := initCommonControlsEx{
+		DwSize: uint32(unsafe.Sizeof(initCommonControlsEx{})),
+		DwICC:  iccLinkClass,
+	}
+	ret, _, err := procInitCommonControlsEx.Call(uintptr(unsafe.Pointer(&controls)))
+	if ret == 0 {
+		return fmt.Errorf("InitCommonControlsEx failed: %w", err)
+	}
+	return nil
 }
 
 func setWindowText(hwnd uintptr, text string) {
@@ -284,6 +327,16 @@ func createFont(height int32, weight int32, face string) uintptr {
 
 func loword(v uintptr) uint16 {
 	return uint16(v & 0xFFFF)
+}
+
+func shellOpenURL(url string) error {
+	verb := mustUTF16Ptr("open")
+	target := mustUTF16Ptr(url)
+	ret, _, _ := procShellExecuteW.Call(0, uintptr(unsafe.Pointer(verb)), uintptr(unsafe.Pointer(target)), 0, 0, swShow)
+	if ret <= 32 {
+		return fmt.Errorf("ShellExecuteW failed with code %d", ret)
+	}
+	return nil
 }
 
 func currentConfigFromUI() *Config {
@@ -410,6 +463,94 @@ func handleUnregister() {
 	showMessage(ui.ProtocolRemovedTitle, ui.ProtocolRemovedMessage, false)
 }
 
+func handleAbout() {
+	if currentAppState == nil {
+		return
+	}
+	if currentAppState.aboutHwnd != 0 {
+		procShowWindow.Call(currentAppState.aboutHwnd, swShow)
+		procUpdateWindow.Call(currentAppState.aboutHwnd)
+		return
+	}
+	if err := initLinkControl(); err != nil {
+		showMessage(ui.ErrorTitle, err.Error(), true)
+		return
+	}
+
+	instance := getModuleHandle()
+	class := wndClassEx{
+		CbSize:        uint32(unsafe.Sizeof(wndClassEx{})),
+		LpfnWndProc:   syscall.NewCallback(aboutWndProc),
+		HInstance:     instance,
+		HbrBackground: colorWindow + 1,
+		LpszClassName: aboutWindowClassName,
+	}
+	atom, _, err := procRegisterClassExW.Call(uintptr(unsafe.Pointer(&class)))
+	if atom == 0 && err != syscall.Errno(1410) {
+		showMessage(ui.ErrorTitle, fmt.Sprintf(ui.WindowClassRegisterFailed, err), true)
+		return
+	}
+
+	currentAppState.aboutHwnd = createWindow(
+		0,
+		"MpvHandlerAboutWindow",
+		ui.AboutTitle,
+		wsCaption|wsSysMenu|wsVisible,
+		260,
+		260,
+		460,
+		190,
+		currentAppState.hwnd,
+		0,
+		instance,
+	)
+	if currentAppState.aboutHwnd == 0 {
+		showMessage(ui.ErrorTitle, fmt.Sprintf("%s", ui.WindowCreateFailed), true)
+	}
+}
+
+func createAboutControls(hwnd uintptr) {
+	instance := getModuleHandle()
+	titleLabel := createWindow(0, "STATIC", ui.AppTitle, wsChild|wsVisible, 24, 20, 390, 24, hwnd, 0, instance)
+	versionLabel := createWindow(0, "STATIC", fmt.Sprintf(ui.AboutVersion, version), wsChild|wsVisible, 24, 56, 390, 22, hwnd, 0, instance)
+	linkLabel := createWindow(0, "SysLink", fmt.Sprintf(ui.AboutRepositoryLink, repositoryURL, repositoryURL), wsChild|wsVisible|wsTabStop, 24, 88, 390, 28, hwnd, uintptr(idAboutLink), instance)
+
+	if currentAppState != nil {
+		applyDefaultFont(currentAppState.titleFont, titleLabel)
+		applyDefaultFont(currentAppState.bodyFont, versionLabel, linkLabel)
+	}
+}
+
+func aboutWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
+	switch msg {
+	case wmCreate:
+		createAboutControls(hwnd)
+		return 0
+	case wmCtlColorStatic:
+		procSetBkMode.Call(wParam, transparentBkMode)
+		return getWindowBrush()
+	case wmNotify:
+		//lint:ignore unsafeptr lParam is the OS-provided NMHDR pointer for this WM_NOTIFY callback.
+		header := (*nmhdr)(unsafe.Pointer(lParam))
+		if header.IDFrom == idAboutLink && (header.Code == nmClick || header.Code == nmReturn) {
+			if err := shellOpenURL(repositoryURL); err != nil {
+				showMessage(ui.ErrorTitle, err.Error(), true)
+			}
+			return 0
+		}
+	case wmClose:
+		procDestroyWindow.Call(hwnd)
+		return 0
+	case wmDestroy:
+		if currentAppState != nil && currentAppState.aboutHwnd == hwnd {
+			currentAppState.aboutHwnd = 0
+		}
+		return 0
+	}
+	ret, _, _ := procDefWindowProcW.Call(hwnd, uintptr(msg), wParam, lParam)
+	return ret
+}
+
 func createMainControls(hwnd uintptr) {
 	instance := getModuleHandle()
 	currentAppState = &AppState{
@@ -447,13 +588,14 @@ func createMainControls(hwnd uintptr) {
 	saveButton := createWindow(0, "BUTTON", ui.SaveConfig, wsChild|wsVisible|wsTabStop|bsPushButton, 24, 286, 124, 34, hwnd, uintptr(idButtonSave), instance)
 	registerButton := createWindow(0, "BUTTON", ui.RegisterProtocol, wsChild|wsVisible|wsTabStop|bsPushButton, 160, 286, 146, 34, hwnd, uintptr(idButtonRegister), instance)
 	unregisterButton := createWindow(0, "BUTTON", ui.ClearRegistration, wsChild|wsVisible|wsTabStop|bsPushButton, 318, 286, 146, 34, hwnd, uintptr(idButtonUnregister), instance)
+	aboutButton := createWindow(0, "BUTTON", ui.AboutButton, wsChild|wsVisible|wsTabStop|bsPushButton, 506, 286, 110, 34, hwnd, uintptr(idButtonAbout), instance)
 
 	statusHeader := createWindow(0, "STATIC", ui.CurrentStatus, wsChild|wsVisible, 24, 340, 120, 20, hwnd, 0, instance)
 	currentAppState.statusLabel = createWindow(wsExClientEdge, "EDIT", "", wsChild|wsVisible|esMultiline|esReadOnly|wsVScroll, 24, 364, 592, 88, hwnd, uintptr(idStatusLabel), instance)
 
 	applyDefaultFont(currentAppState.titleFont, titleLabel)
 	applyDefaultFont(currentAppState.labelFont, mpvLabel, argsLabel, statusHeader)
-	applyDefaultFont(currentAppState.bodyFont, currentAppState.editMpvPath, browseButton, currentAppState.editExtraArgs, currentAppState.checkEnableLog, saveButton, registerButton, unregisterButton, currentAppState.statusLabel)
+	applyDefaultFont(currentAppState.bodyFont, currentAppState.editMpvPath, browseButton, currentAppState.editExtraArgs, currentAppState.checkEnableLog, saveButton, registerButton, unregisterButton, aboutButton, currentAppState.statusLabel)
 	applyDefaultFont(currentAppState.smallFont, subtitleLabel, argsHintLabel)
 
 	cfg, err := loadConfig()
@@ -497,6 +639,9 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 			return 0
 		case idButtonUnregister:
 			handleUnregister()
+			return 0
+		case idButtonAbout:
+			handleAbout()
 			return 0
 		case idCheckEnableLog:
 			refreshStatus()

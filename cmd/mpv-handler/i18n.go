@@ -18,6 +18,10 @@ type UIStrings struct {
 	SaveConfig                    string
 	RegisterProtocol              string
 	ClearRegistration             string
+	AboutButton                   string
+	AboutTitle                    string
+	AboutVersion                  string
+	AboutRepositoryLink           string
 	CurrentStatus                 string
 	ProtocolRegistered            string
 	ProtocolNotRegistered         string
@@ -88,6 +92,10 @@ func englishStrings() UIStrings {
 		SaveConfig:                    "Save Config",
 		RegisterProtocol:              "Register Protocol",
 		ClearRegistration:             "Clear Registration",
+		AboutButton:                   "About",
+		AboutTitle:                    "About mpv-handler",
+		AboutVersion:                  "Version: %s",
+		AboutRepositoryLink:           "Repository: <a href=\"%s\">%s</a>",
 		CurrentStatus:                 "Current status",
 		ProtocolRegistered:            "Protocol status: Registered",
 		ProtocolNotRegistered:         "Protocol status: Not registered",
@@ -159,6 +167,10 @@ func chineseStrings() UIStrings {
 		SaveConfig:                    "保存配置",
 		RegisterProtocol:              "注册协议",
 		ClearRegistration:             "清除注册",
+		AboutButton:                   "关于",
+		AboutTitle:                    "关于 mpv-handler",
+		AboutVersion:                  "版本号：%s",
+		AboutRepositoryLink:           "仓库地址：<a href=\"%s\">%s</a>",
 		CurrentStatus:                 "当前状态",
 		ProtocolRegistered:            "协议状态：已注册",
 		ProtocolNotRegistered:         "协议状态：未注册",

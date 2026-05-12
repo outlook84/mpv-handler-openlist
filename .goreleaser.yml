@@ -16,7 +16,7 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -H=windowsgui
+      - -s -w -H=windowsgui -X main.version={{ .Version }}
 
 archives:
   - id: windows-archives
